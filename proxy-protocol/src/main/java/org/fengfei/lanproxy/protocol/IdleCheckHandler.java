@@ -8,7 +8,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 
 /**
- * check idle chanel.
+ * check idle channel.
  *
  * @author fengfei
  *
@@ -29,7 +29,6 @@ public class IdleCheckHandler extends IdleStateHandler {
 
     @Override
     protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
-
         if (IdleStateEvent.FIRST_WRITER_IDLE_STATE_EVENT == evt) {
             logger.debug("channel write timeout {}", ctx.channel());
             ProxyMessage proxyMessage = new ProxyMessage();

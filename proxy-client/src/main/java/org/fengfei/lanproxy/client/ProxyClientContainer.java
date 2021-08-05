@@ -31,7 +31,7 @@ import io.netty.handler.ssl.SslHandler;
 
 public class ProxyClientContainer implements Container, ChannelStatusListener {
 
-    private static Logger logger = LoggerFactory.getLogger(ProxyClientContainer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProxyClientContainer.class);
 
     private static final int MAX_FRAME_LENGTH = 1024 * 1024;
 
@@ -43,13 +43,16 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
 
     private static final int LENGTH_ADJUSTMENT = 0;
 
-    private NioEventLoopGroup workerGroup;
+    private final NioEventLoopGroup workerGroup;
 
-    private Bootstrap bootstrap;
+    private final Bootstrap bootstrap;
 
-    private Bootstrap realServerBootstrap;
+    private final Bootstrap realServerBootstrap;
 
-    private Config config = Config.getInstance();
+    /**
+     * 获取默认配置文件的配置 config.properties
+     */
+    private final Config config = Config.getInstance();
 
     private SSLContext sslContext;
 
@@ -61,9 +64,8 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
         realServerBootstrap.group(workerGroup);
         realServerBootstrap.channel(NioSocketChannel.class);
         realServerBootstrap.handler(new ChannelInitializer<SocketChannel>() {
-
             @Override
-            public void initChannel(SocketChannel ch) throws Exception {
+            public void initChannel(SocketChannel ch) {
                 ch.pipeline().addLast(new RealServerChannelHandler());
             }
         });
@@ -75,11 +77,11 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
 
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-                if (Config.getInstance().getBooleanValue("ssl.enable", false)) {
+                boolean sslEnable = Config.getInstance().getBooleanValue("ssl.enable", false);
+                if (sslEnable) {
                     if (sslContext == null) {
                         sslContext = SslContextCreator.createSSLContext();
                     }
-
                     ch.pipeline().addLast(createSslHandler(sslContext));
                 }
                 ch.pipeline().addLast(new ProxyMessageDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP));
@@ -102,13 +104,10 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
     }
 
     private void connectProxyServer() {
-
         bootstrap.connect(config.getStringValue("server.host"), config.getIntValue("server.port")).addListener(new ChannelFutureListener() {
-
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
+            public void operationComplete(ChannelFuture future) {
                 if (future.isSuccess()) {
-
                     // 连接成功，向服务器发送客户端认证信息（clientKey）
                     ClientChannelMannager.setCmdChannel(future.channel());
                     ProxyMessage proxyMessage = new ProxyMessage();
@@ -119,7 +118,6 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
                     logger.info("connect proxy server success, {}", future.channel());
                 } else {
                     logger.warn("connect proxy server failed", future.cause());
-
                     // 连接失败，发起重连
                     reconnectWait();
                     connectProxyServer();
@@ -144,7 +142,6 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
             if (sleepTimeMill > 60000) {
                 sleepTimeMill = 1000;
             }
-
             synchronized (this) {
                 sleepTimeMill = sleepTimeMill * 2;
                 wait(sleepTimeMill);
@@ -154,8 +151,6 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
     }
 
     public static void main(String[] args) {
-
-        ContainerHelper.start(Arrays.asList(new Container[] { new ProxyClientContainer() }));
+        ContainerHelper.start(Arrays.asList(new Container[]{new ProxyClientContainer()}));
     }
-
 }

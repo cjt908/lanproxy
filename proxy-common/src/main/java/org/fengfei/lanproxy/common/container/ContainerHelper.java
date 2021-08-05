@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ContainerHelper {
 
-    private static Logger logger = LoggerFactory.getLogger(ContainerHelper.class);
+    private static final Logger logger = LoggerFactory.getLogger(ContainerHelper.class);
 
     private static volatile boolean running = true;
 

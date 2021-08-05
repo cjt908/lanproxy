@@ -27,7 +27,6 @@ public class ProxyMessageEncoder extends MessageToByteEncoder<ProxyMessage> {
 
         // write the total packet length but without length field's length.
         out.writeInt(bodyLength);
-
         out.writeByte(msg.getType());
         out.writeLong(msg.getSerialNumber());
 

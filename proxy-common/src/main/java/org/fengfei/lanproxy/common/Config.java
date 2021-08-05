@@ -14,7 +14,7 @@ public class Config {
 
     private static final String DEFAULT_CONF = "config.properties";
 
-    private static Map<String, Config> instances = new ConcurrentHashMap<String, Config>();
+    private static Map<String, Config> instances = new ConcurrentHashMap<>();
 
     private Properties configuration = new Properties();
 

@@ -17,10 +17,10 @@ import io.netty.channel.SimpleChannelInboundHandler;
  */
 public class RealServerChannelHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
-    private static Logger logger = LoggerFactory.getLogger(RealServerChannelHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(RealServerChannelHandler.class);
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ByteBuf buf) {
         Channel realServerChannel = ctx.channel();
         Channel channel = realServerChannel.attr(Constants.NEXT_CHANNEL).get();
         if (channel == null) {

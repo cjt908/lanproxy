@@ -26,7 +26,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
  */
 public class ClientChannelHandler extends SimpleChannelInboundHandler<ProxyMessage> {
 
-    private static Logger logger = LoggerFactory.getLogger(ClientChannelHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(ClientChannelHandler.class);
 
     private Bootstrap bootstrap;
 
@@ -147,7 +147,6 @@ public class ClientChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-
         // 控制连接
         if (ClientChannelMannager.getCmdChannel() == ctx.channel()) {
             ClientChannelMannager.setCmdChannel(null);
@@ -170,5 +169,4 @@ public class ClientChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
         logger.error("exception caught", cause);
         super.exceptionCaught(ctx, cause);
     }
-
 }
