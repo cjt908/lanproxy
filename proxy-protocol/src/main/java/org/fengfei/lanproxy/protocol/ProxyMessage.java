@@ -49,7 +49,7 @@ public class ProxyMessage {
     private byte type;
 
     /**
-     * 消息流水号
+     * 消息流水号 方便执行异步操作逻辑
      */
     private long serialNumber;
 

@@ -9,6 +9,9 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
+/**
+ * 指标收集处理器
+ */
 public class BytesMetricsHandler extends ChannelDuplexHandler {
 
     @Override
@@ -42,5 +45,4 @@ public class BytesMetricsHandler extends ChannelDuplexHandler {
         MetricsCollector.getCollector(sa.getPort()).getChannels().decrementAndGet();
         super.channelInactive(ctx);
     }
-
 }

@@ -18,18 +18,16 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 
 public class WebConfigContainer implements Container {
 
-    private static Logger logger = LoggerFactory.getLogger(WebConfigContainer.class);
+    private static final Logger logger = LoggerFactory.getLogger(WebConfigContainer.class);
 
     private NioEventLoopGroup serverWorkerGroup;
 
     private NioEventLoopGroup serverBossGroup;
 
     public WebConfigContainer() {
-
         // 配置管理，并发处理很小，使用单线程处理网络事件
         serverBossGroup = new NioEventLoopGroup(1);
         serverWorkerGroup = new NioEventLoopGroup(1);
-
     }
 
     @Override
@@ -41,7 +39,6 @@ public class WebConfigContainer implements Container {
                     @Override
                     public void initChannel(SocketChannel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
-
                         pipeline.addLast(new HttpServerCodec());
                         pipeline.addLast(new HttpObjectAggregator(64 * 1024));
                         pipeline.addLast(new ChunkedWriteHandler());

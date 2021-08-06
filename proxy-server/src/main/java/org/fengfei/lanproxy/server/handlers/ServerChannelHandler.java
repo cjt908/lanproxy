@@ -27,7 +27,7 @@ public class ServerChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
     private static Logger logger = LoggerFactory.getLogger(ServerChannelHandler.class);
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ProxyMessage proxyMessage) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, ProxyMessage proxyMessage) {
         logger.debug("ProxyMessage received {}", proxyMessage.getType());
         switch (proxyMessage.getType()) {
             case ProxyMessage.TYPE_HEARTBEAT:
@@ -96,21 +96,18 @@ public class ServerChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
             logger.warn("ConnectMessage:null uri");
             return;
         }
-
         String[] tokens = uri.split("@");
         if (tokens.length != 2) {
             ctx.channel().close();
             logger.warn("ConnectMessage:error uri");
             return;
         }
-
         Channel cmdChannel = ProxyChannelManager.getCmdChannel(tokens[1]);
         if (cmdChannel == null) {
             ctx.channel().close();
             logger.warn("ConnectMessage:error cmd channel key {}", tokens[1]);
             return;
         }
-
         Channel userChannel = ProxyChannelManager.getUserChannel(cmdChannel, tokens[0]);
         if (userChannel != null) {
             ctx.channel().attr(Constants.USER_ID).set(tokens[0]);
@@ -138,14 +135,12 @@ public class ServerChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
             ctx.channel().close();
             return;
         }
-
         Channel channel = ProxyChannelManager.getCmdChannel(clientKey);
         if (channel != null) {
             logger.warn("exist channel for key {}, {}", clientKey, channel);
             ctx.channel().close();
             return;
         }
-
         logger.info("set port => channel, {}, {}, {}", clientKey, ports, ctx.channel());
         ProxyChannelManager.addCmdChannel(ports, clientKey, ctx.channel());
     }

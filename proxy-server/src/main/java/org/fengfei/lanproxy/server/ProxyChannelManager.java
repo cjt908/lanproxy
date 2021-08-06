@@ -23,12 +23,14 @@ import io.netty.util.AttributeKey;
  * 代理服务连接管理（代理客户端连接+用户请求连接）
  *
  * @author fengfei
- *
  */
 public class ProxyChannelManager {
 
     private static Logger logger = LoggerFactory.getLogger(ProxyChannelManager.class);
 
+    /**
+     * 使用内网穿透功能的用户Id和用户的连接通道
+     */
     private static final AttributeKey<Map<String, Channel>> USER_CHANNELS = AttributeKey.newInstance("user_channels");
 
     private static final AttributeKey<String> REQUEST_LAN_INFO = AttributeKey.newInstance("request_lan_info");
@@ -37,9 +39,15 @@ public class ProxyChannelManager {
 
     private static final AttributeKey<String> CHANNEL_CLIENT_KEY = AttributeKey.newInstance("channel_client_key");
 
-    private static Map<Integer, Channel> portCmdChannelMapping = new ConcurrentHashMap<Integer, Channel>();
+    /**
+     * 代理服务器对外端口和对应代理客户端通道Map集合
+     */
+    private static final Map<Integer, Channel> portCmdChannelMapping = new ConcurrentHashMap<>();
 
-    private static Map<String, Channel> cmdChannels = new ConcurrentHashMap<String, Channel>();
+    /**
+     * 代理客户端标识和对应代理客户端通道Map集合
+     */
+    private static final Map<String, Channel> cmdChannels = new ConcurrentHashMap<>();
 
     static {
         ProxyConfig.getInstance().addConfigChangedListener(new ConfigChangedListener() {
@@ -67,7 +75,6 @@ public class ProxyChannelManager {
                         List<Integer> channelInetPorts = new ArrayList<Integer>(proxyChannel.attr(CHANNEL_PORT).get());
 
                         synchronized (portCmdChannelMapping) {
-
                             // 移除旧的连接映射关系
                             for (int chanelInetPort : channelInetPorts) {
                                 Channel channel = portCmdChannelMapping.get(chanelInetPort);
@@ -139,26 +146,29 @@ public class ProxyChannelManager {
     /**
      * 增加代理服务器端口与代理控制客户端连接的映射关系
      *
-     * @param ports
-     * @param channel
+     * @param ports     公网服务器端口
+     * @param clientKey 代理客户端标识
+     * @param channel   代理客户端链接通道
      */
     public static void addCmdChannel(List<Integer> ports, String clientKey, Channel channel) {
-
         if (ports == null) {
             throw new IllegalArgumentException("port can not be null");
         }
-
         // 客户端（proxy-client）相对较少，这里同步的比较重
         // 保证服务器对外端口与客户端到服务器的连接关系在临界情况时调用removeChannel(Channel channel)时不出问题
         synchronized (portCmdChannelMapping) {
             for (int port : ports) {
+                logger.debug("代理服务器对外 port：{}，代理客户端channel：{}", port, channel);
                 portCmdChannelMapping.put(port, channel);
             }
         }
-
+        //当前客户端通道对应的服务端对外端口
         channel.attr(CHANNEL_PORT).set(ports);
+        //当前客户端通道对应的标识
         channel.attr(CHANNEL_CLIENT_KEY).set(clientKey);
+        //当前客户端通道对应的用户通道
         channel.attr(USER_CHANNELS).set(new ConcurrentHashMap<String, Channel>());
+        //代理客户端标识和代理客户端通道映射关系
         cmdChannels.put(clientKey, channel);
     }
 
@@ -219,7 +229,7 @@ public class ProxyChannelManager {
     /**
      * 增加用户连接与代理客户端连接关系
      *
-     * @param proxyChannel
+     * @param cmdChannel
      * @param userId
      * @param userChannel
      */
@@ -234,7 +244,7 @@ public class ProxyChannelManager {
     /**
      * 删除用户连接与代理客户端连接关系
      *
-     * @param proxyChannel
+     * @param cmdChannel
      * @param userId
      * @return
      */
@@ -251,7 +261,7 @@ public class ProxyChannelManager {
     /**
      * 根据代理客户端连接与用户编号获取用户连接
      *
-     * @param proxyChannel
+     * @param cmdChannel
      * @param userId
      * @return
      */

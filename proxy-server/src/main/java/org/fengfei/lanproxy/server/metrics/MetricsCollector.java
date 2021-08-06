@@ -10,20 +10,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class MetricsCollector {
+    /**
+     * 指标收集字典 端口号为key
+     */
+    private static final Map<Integer, MetricsCollector> metricsCollectors = new ConcurrentHashMap<>();
 
-    private static Map<Integer, MetricsCollector> metricsCollectors = new ConcurrentHashMap<Integer, MetricsCollector>();
+    private Integer port = 0;
 
-    private Integer port;
+    private final AtomicLong readBytes = new AtomicLong();
 
-    private AtomicLong readBytes = new AtomicLong();
+    private final AtomicLong wroteBytes = new AtomicLong();
 
-    private AtomicLong wroteBytes = new AtomicLong();
+    private final AtomicLong readMsgs = new AtomicLong();
 
-    private AtomicLong readMsgs = new AtomicLong();
+    private final AtomicLong wroteMsgs = new AtomicLong();
 
-    private AtomicLong wroteMsgs = new AtomicLong();
-
-    private AtomicInteger channels = new AtomicInteger();
+    private final AtomicInteger channels = new AtomicInteger();
 
     private MetricsCollector() {
     }
@@ -45,7 +47,7 @@ public class MetricsCollector {
     }
 
     public static List<Metrics> getAndResetAllMetrics() {
-        List<Metrics> allMetrics = new ArrayList<Metrics>();
+        List<Metrics> allMetrics = new ArrayList<>();
         Iterator<Entry<Integer, MetricsCollector>> ite = metricsCollectors.entrySet().iterator();
         while (ite.hasNext()) {
             allMetrics.add(ite.next().getValue().getAndResetMetrics());
@@ -117,5 +119,4 @@ public class MetricsCollector {
     public void setPort(Integer port) {
         this.port = port;
     }
-
 }

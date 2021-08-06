@@ -150,6 +150,11 @@ public class ProxyClientContainer implements Container, ChannelStatusListener {
         }
     }
 
+    /**
+     * 运行入口方法
+     *
+     * @param args 启动参数
+     */
     public static void main(String[] args) {
         ContainerHelper.start(Arrays.asList(new Container[]{new ProxyClientContainer()}));
     }

@@ -33,7 +33,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslHandler;
 
 public class ProxyServerContainer implements Container, ConfigChangedListener {
-
     /**
      * max packet is 2M.
      */
@@ -47,37 +46,36 @@ public class ProxyServerContainer implements Container, ConfigChangedListener {
 
     private static final int LENGTH_ADJUSTMENT = 0;
 
-    private static Logger logger = LoggerFactory.getLogger(ProxyServerContainer.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProxyServerContainer.class);
 
     private NioEventLoopGroup serverWorkerGroup;
 
     private NioEventLoopGroup serverBossGroup;
 
     public ProxyServerContainer() {
-
         serverBossGroup = new NioEventLoopGroup();
         serverWorkerGroup = new NioEventLoopGroup();
-
         ProxyConfig.getInstance().addConfigChangedListener(this);
     }
 
     @Override
     public void start() {
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(serverBossGroup, serverWorkerGroup).channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer<SocketChannel>() {
-
-            @Override
-            public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(new ProxyMessageDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP));
-                ch.pipeline().addLast(new ProxyMessageEncoder());
-                ch.pipeline().addLast(new IdleCheckHandler(IdleCheckHandler.READ_IDLE_TIME, IdleCheckHandler.WRITE_IDLE_TIME, 0));
-                ch.pipeline().addLast(new ServerChannelHandler());
-            }
-        });
-
+        bootstrap
+                .group(serverBossGroup, serverWorkerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) {
+                        ch.pipeline().addLast(new ProxyMessageDecoder(MAX_FRAME_LENGTH, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH, LENGTH_ADJUSTMENT, INITIAL_BYTES_TO_STRIP));
+                        ch.pipeline().addLast(new ProxyMessageEncoder());
+                        ch.pipeline().addLast(new IdleCheckHandler(IdleCheckHandler.READ_IDLE_TIME, IdleCheckHandler.WRITE_IDLE_TIME, 0));
+                        ch.pipeline().addLast(new ServerChannelHandler());
+                    }
+                });
         try {
             bootstrap.bind(ProxyConfig.getInstance().getServerBind(), ProxyConfig.getInstance().getServerPort()).get();
-            logger.info("proxy server start on port " + ProxyConfig.getInstance().getServerPort());
+            logger.info("proxy server start on port {}", ProxyConfig.getInstance().getServerPort());
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
@@ -87,9 +85,7 @@ public class ProxyServerContainer implements Container, ConfigChangedListener {
             int port = Config.getInstance().getIntValue("server.ssl.port");
             initializeSSLTCPTransport(host, port, new SslContextCreator().initSSLContext());
         }
-
         startUserPort();
-
     }
 
     private void initializeSSLTCPTransport(String host, int port, final SSLContext sslContext) {
@@ -112,7 +108,6 @@ public class ProxyServerContainer implements Container, ConfigChangedListener {
             }
         });
         try {
-
             // Bind and start to accept incoming connections.
             ChannelFuture f = b.bind(host, port);
             f.sync();
@@ -122,31 +117,33 @@ public class ProxyServerContainer implements Container, ConfigChangedListener {
         }
     }
 
+    /**
+     * 开启用户配置的对外暴露的端口的服务
+     */
     private void startUserPort() {
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(serverBossGroup, serverWorkerGroup).channel(NioServerSocketChannel.class).childHandler(new ChannelInitializer<SocketChannel>() {
-
-            @Override
-            public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addFirst(new BytesMetricsHandler());
-                ch.pipeline().addLast(new UserChannelHandler());
-            }
-        });
-
+        bootstrap.group(serverBossGroup, serverWorkerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch) {
+                        ch.pipeline().addFirst(new BytesMetricsHandler());
+                        ch.pipeline().addLast(new UserChannelHandler());
+                    }
+                });
         List<Integer> ports = ProxyConfig.getInstance().getUserPorts();
+        //绑定所有端口号
         for (int port : ports) {
             try {
                 bootstrap.bind(port).get();
-                logger.info("bind user port " + port);
+                logger.info("bind user port {}", port);
             } catch (Exception ex) {
-
-                // BindException表示该端口已经绑定过
+                // BindException表示该端口已经绑定过  正常情况
                 if (!(ex.getCause() instanceof BindException)) {
                     throw new RuntimeException(ex);
                 }
             }
         }
-
     }
 
     @Override
@@ -166,12 +163,10 @@ public class ProxyServerContainer implements Container, ConfigChangedListener {
         if (needsClientAuth) {
             sslEngine.setNeedClientAuth(true);
         }
-
         return new SslHandler(sslEngine);
     }
 
     public static void main(String[] args) {
-        ContainerHelper.start(Arrays.asList(new Container[] { new ProxyServerContainer(), new WebConfigContainer() }));
+        ContainerHelper.start(Arrays.asList(new Container[]{new ProxyServerContainer(), new WebConfigContainer()}));
     }
-
 }

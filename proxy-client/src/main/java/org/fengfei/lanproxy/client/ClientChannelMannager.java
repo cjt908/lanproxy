@@ -24,7 +24,6 @@ import io.netty.util.AttributeKey;
  * 代理客户端与后端真实服务器连接管理
  *
  * @author fengfei
- *
  */
 public class ClientChannelMannager {
 
@@ -51,18 +50,18 @@ public class ClientChannelMannager {
             return;
         }
 
-        bootstrap.connect(config.getStringValue("server.host"), config.getIntValue("server.port")).addListener(new ChannelFutureListener() {
-
-            @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-                if (future.isSuccess()) {
-                    borrowListener.success(future.channel());
-                } else {
-                    logger.warn("connect proxy server failed", future.cause());
-                    borrowListener.error(future.cause());
-                }
-            }
-        });
+        bootstrap.connect(config.getStringValue("server.host"), config.getIntValue("server.port"))
+                .addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) {
+                        if (future.isSuccess()) {
+                            borrowListener.success(future.channel());
+                        } else {
+                            logger.warn("connect proxy server failed", future.cause());
+                            borrowListener.error(future.cause());
+                        }
+                    }
+                });
     }
 
     public static void returnProxyChanel(Channel proxyChanel) {
@@ -122,7 +121,6 @@ public class ClientChannelMannager {
                 realServerChannel.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
             }
         }
-
         realServerChannels.clear();
     }
 }

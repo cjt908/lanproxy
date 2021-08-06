@@ -20,22 +20,20 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
- *
  * @author fengfei
- *
  */
 public class ClientChannelHandler extends SimpleChannelInboundHandler<ProxyMessage> {
 
     private static final Logger logger = LoggerFactory.getLogger(ClientChannelHandler.class);
 
-    private Bootstrap bootstrap;
+    private Bootstrap realBootstrap;
 
     private Bootstrap proxyBootstrap;
 
     private ChannelStatusListener channelStatusListener;
 
-    public ClientChannelHandler(Bootstrap bootstrap, Bootstrap proxyBootstrap, ChannelStatusListener channelStatusListener) {
-        this.bootstrap = bootstrap;
+    public ClientChannelHandler(Bootstrap realBootstrap, Bootstrap proxyBootstrap, ChannelStatusListener channelStatusListener) {
+        this.realBootstrap = realBootstrap;
         this.proxyBootstrap = proxyBootstrap;
         this.channelStatusListener = channelStatusListener;
     }
@@ -84,27 +82,22 @@ public class ClientChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
         String[] serverInfo = new String(proxyMessage.getData()).split(":");
         String ip = serverInfo[0];
         int port = Integer.parseInt(serverInfo[1]);
-        bootstrap.connect(ip, port).addListener(new ChannelFutureListener() {
-
+        realBootstrap.connect(ip, port).addListener(new ChannelFutureListener() {
             @Override
-            public void operationComplete(ChannelFuture future) throws Exception {
-
+            public void operationComplete(ChannelFuture future) {
                 // 连接后端服务器成功
                 if (future.isSuccess()) {
                     final Channel realServerChannel = future.channel();
-                    logger.debug("connect realserver success, {}", realServerChannel);
+                    logger.debug("connect realServer success, {}", realServerChannel);
 
                     realServerChannel.config().setOption(ChannelOption.AUTO_READ, false);
-
                     // 获取连接
                     ClientChannelMannager.borrowProxyChanel(proxyBootstrap, new ProxyChannelBorrowListener() {
-
                         @Override
                         public void success(Channel channel) {
                             // 连接绑定
                             channel.attr(Constants.NEXT_CHANNEL).set(realServerChannel);
                             realServerChannel.attr(Constants.NEXT_CHANNEL).set(channel);
-
                             // 远程绑定
                             ProxyMessage proxyMessage = new ProxyMessage();
                             proxyMessage.setType(ProxyMessage.TYPE_CONNECT);
@@ -159,7 +152,6 @@ public class ClientChannelHandler extends SimpleChannelInboundHandler<ProxyMessa
                 realServerChannel.close();
             }
         }
-
         ClientChannelMannager.removeProxyChanel(ctx.channel());
         super.channelInactive(ctx);
     }
